@@ -1,1 +1,2 @@
 # alec-prototyping
+This repository contains mostly python tools for prototyping alarm clustering methods to implement in OpenNMS' [ALEC](alec.opennms.com). Also includes a command-line tool built on [OCE tools](https://github.com/OpenNMS/oce-tools) to export ALEC/OCE xmls to vectorized data.
