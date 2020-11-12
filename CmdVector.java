@@ -56,7 +56,7 @@ public class CmdVector{//} implements Action{
     private static String situationsIn;
     private static String csvOut;
     private static long tickRes = 268000000; //24 * 60 * 60 * 1000; // tick res is 1 day
-    private static Map<String, long[]> alarmTimes = new LinkedHashMap<String, long[]>();
+    //private static Map<String, long[]> alarmTimes = new LinkedHashMap<String, long[]>();
 
     public static void main(String args[]){
         alarmsIn = args[0];
@@ -80,9 +80,10 @@ public class CmdVector{//} implements Action{
         final Set<Situation> situations = JaxbUtils.getSituations(Paths.get(situationsIn));
 
         // Need to get max and min alarm times here because driver only takes latest per tick
-        for (Alarm a1: alarms){
-        	if (!alarmTime.contains(a1.getId())){
-        		alarmTime.put(a1.getId(), new long[] {a1.getTime(), a1.getTime()});
+        // TODO: consiter severity/cleared?
+        /*for (Alarm a1: alarms){
+        	if (!alarmTimes.contains(a1.getId())){
+        		alarmTimes.put(a1.getId(), new long[] {a1.getTime(), a1.getTime()});
         	} else {
         		long curTime = a1.getTime();
             	long[] curSpan = alarmTimes.get(a1.getId());
@@ -98,8 +99,8 @@ public class CmdVector{//} implements Action{
           			(a1.getTime() != a2.getTime()))
        		        System.out.printf("Found ID match with different times: %s,%d vs. %s,%d\n", a1.getId(),
                      	a1.getTime(), a2.getId(), a2.getTime());
-        	}*/
-        }
+        	}
+        }*/
 
         final Path path = Paths.get(csvOut);
         System.out.printf("Writing to: %s\n", path);
@@ -155,8 +156,10 @@ public class CmdVector{//} implements Action{
             for (AlarmInSpaceTime a1 : alarms) {
                 for (AlarmInSpaceTime a2 : alarms) {
                     // diff comparison assuming alarm distances are symmetric, lex comparison of Id for now
-                    //if (a1 == a2) {
-                	
+                    /*if (a1.getAlarmId().compareTo(a2.getAlarmId()) >= 0) {
+                	    continue;
+                	}*/
+                	// this finds lots of mismatches because events are considered seperately
                 	if (a1.getAlarmId().compareTo(a2.getAlarmId()) >= 0){
                 		if ((a1.getAlarmId().compareTo(a2.getAlarmId()) == 0) &&
                 			(a1.getAlarmTime() != a2.getAlarmTime()))
@@ -164,6 +167,7 @@ public class CmdVector{//} implements Action{
                 		        	a1.getAlarmTime(), a2.getAlarmId(), a2.getAlarmTime());
                         continue;
                     }
+
                     final InputVector inputVector = vectorizer.vectorize(a1, a2);
                     final OutputVector outputVector = OutputVector.builder()
                             .inputVector(inputVector)
@@ -182,19 +186,19 @@ public class CmdVector{//} implements Action{
         }
 
         private List<AlarmInSpaceTime> getAlarmsInSpaceTime(Graph<CEVertex,CEEdge> g) {
-            // This is how Vecrotize collects alarms
-            /*
-            List<AlarmInSpaceTime> alarmsInSpaceAndTime = new LinkedList<>();
+            // This is how Vectorize collects alarms
+            /*List<AlarmInSpaceTime> alarmsInSpaceAndTime = new LinkedList<>();
             for (CEVertex v : g.getVertices()) {
                 for (Alarm a : v.getAlarms()) {
                     alarmsInSpaceAndTime.add(new AlarmInSpaceTime(v,a));
                 }
-            }
-            */
+            }*/
+            
 
             // This is how DBScan engine collects alarms...
             // Ensure the points are sorted in order to make sure that the output of the clusterer is deterministic
             // OPTIMIZATION: Can we avoid doing this every tick?
+            
             List<AlarmInSpaceTime> alarmsInSpaceAndTime = g.getVertices().stream()
                 .map(v -> v.getAlarms().stream()
                         .map(a -> new AlarmInSpaceTime(v, a))
@@ -202,6 +206,7 @@ public class CmdVector{//} implements Action{
                 .flatMap(Collection::stream)
                 .sorted(Comparator.comparing(AlarmInSpaceTime::getAlarmTime).thenComparing(AlarmInSpaceTime::getAlarmId))
                 .collect(Collectors.toList());
+            
                 
             /*
             Map<String, AlarmInSpaceTime> filterAlarmsInSpaceAndTime = new HashMap<>();
@@ -354,7 +359,7 @@ public class CmdVector{//} implements Action{
                 "same_instance",
                 "same_parent",
                 "share_ancestor",
-                "time_delta_seconds",
+                "time_delta_ms",
                 "distance_on_graph",
                 "distance_in_st",
                 "io_id_similarity",

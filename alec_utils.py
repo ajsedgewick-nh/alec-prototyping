@@ -130,7 +130,7 @@ def score_clusters(refclust, predclust):#, scoreid=None):
 
 # parse useful info from alarm XML file into pandas
 def read_alarm_xml(fn):
-    with open("alec_build/alec/test_data/cpn.alarms.xml", 'r') as f:
+    with open(fn, 'r') as f:
         tree = ET.parse(f)
         root = tree.getroot()
         alarmlist = []
@@ -144,3 +144,23 @@ def read_alarm_xml(fn):
                               'summary':alarm.attrib['summary']})
     
         return pd.DataFrame(alarmlist)
+
+    
+# parse useful info from alarm XML file into pandas
+def read_alarm_xml_events(fn):
+    with open(fn, 'r') as f:
+        tree = ET.parse(f)
+        root = tree.getroot()
+        eventlist = []
+        for alarm in root:
+            for event in alarm:
+                eventlist.append({'event-id':event.attrib['id'],
+                                  'alarm-id':alarm.attrib['id'],
+                                  'object-id':alarm.attrib['inventory-object-id'],
+                                  'object-type':alarm.attrib['inventory-object-type'],
+                                  'event-time':int(event.attrib['time']),
+                                  'event-severity':event.attrib['severity'],
+                                  'event-summary':event.attrib['summary'],
+                                  'alarm-summary':alarm.attrib['summary']})
+    
+        return pd.DataFrame(eventlist)
